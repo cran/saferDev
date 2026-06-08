@@ -1,0 +1,646 @@
+#' @title Function for All Arguments Here
+#' @description
+#' Get the \code{$MISSING_ARG_NAMES}, \code{$MISSING_ARGS} and \code{$NEW} of \code{all_args_here()}.
+#' @param arg_full List of all arguments of the function with default value.
+#' @param arg_full_names Vector of strings of the names of the arguments of the function. Can be \code{NULL}.
+#' @param tempo_split Vector of strings of the observed argument writing of the function.
+#' @param three_dots_log Vector of logical. Is \code{...} present among \code{arg_full_names}.
+#' @param i2 Single positive and non null integer value indicating the loop number.
+#' @param col1_i2 Single positive and non null integer value indicating the code line number of the checked function.
+#' @param col2_i2 Single string indicating the name of the checked sub function.
+#' @param arg_user_setting_x Single string indicating the name of the checked function.
+#' @param warn Single warning string. Can be \code{NULL}.
+#' @param warn_count Single positive integer value indicating the warning count.
+#' @param lib_path Vector of characters specifying the absolute pathways of the directories containing the required packages for the function, if not in the default directories. Useful when R packages are not installed in the default directories because of lack of admin rights. More precisely, \code{lib_path} is passed through the \code{new} argument of \code{.libPaths()} so that the new library paths are \code{unique(c(new, .Library.site, .Library))}. Warning: \code{.libPaths()} is restored to the initial paths, after function execution. Ignored if \code{NULL} (default) or if the \code{safer_check} argument is \code{FALSE}: only the pathways specified by the current \code{.libPaths()} are used for package calling.
+#' @param error_text Single character string used to add information in error messages returned by the function, notably if the function is inside other functions, which is practical for debugging. Example: \code{error_text = " INSIDE <PACKAGE_1>::<FUNCTION_1> INSIDE <PACKAGE_2>::<FUNCTION_2>."}. If \code{NULL}, converted into \code{""}.
+#' @returns
+#' A list:
+#' \itemize{
+#'   \item \code{col6}: the \code{$MISSING_ARG_NAMES}.
+#'   \item \code{col7}: the \code{$MISSING_ARGS}.
+#'   \item \code{col8}: the \code{$STATUS}.
+#' }
+#' @details
+#' Warnings:
+#' \itemize{
+#'   \item requires \code{saferDev::arg_check}.
+#'   \item In the safer Backbone section \code{"######## check of the required functions from the required packages"}, add also \code{saferDev::arg_check} when checking for the presence of \code{.all_args_here_fill}.
+#' }
+#' @author \href{mailto:gael.millot@pasteur.fr}{Gael Millot}
+#' @author Haiding Wang  
+#' @author Yushi Han
+#' @keywords internal
+.all_args_here_fill <- function(
+    # in internal functions, all arguments are without value on purpose
+    arg_full,
+    arg_full_names, 
+    tempo_split, 
+    three_dots_log, 
+    i2, 
+    col1_i2, 
+    col2_i2,
+    arg_user_setting_x, 
+    warn,
+    warn_count,
+    lib_path, # required because of saferDev::arg_check()
+    error_text # warning: in internal functions, error_text without default value returns a R classical non traced error message (specific of internal functions since classical functions are error_text = "")
+){
+    # EXAMPLE (because the CRAN does not accept examples for unexported functions)
+    # .all_args_here_fill(arg_full = list(x = quote(expr = )), arg_full_names = "x", tempo_split = "x", three_dots_log = FALSE, i2 = 1, col1_i2 = 1, col2_i2 = "length", arg_user_setting_x = "\"FUN1\"", warn = NULL, warn_count = 0, lib_path = NULL, error_text = " INSIDE P1::F1")
+    # DEBUGGING
+    # arg_full = arg_full ; arg_full_names = arg_full_names ; tempo_split = tempo_split ; three_dots_log = three_dots_log ; i2 = i2 ; col1_i2 = col1[i2] ; col2_i2 = col2[i2] ; arg_user_setting_x = "FUN1" ; warn = "WARNING" ; warn_count = 1 ; lib_path = NULL ; error_text = " INSIDE P1::F1" 
+    #  arg_full = list(definition = "sys.function(sys.parent())", call = "sys.call(sys.parent())", expand.dots = TRUE, envir = "parent.frame(2L)") ; arg_full_names = c("definition", "call", "expand.dots", "envir") ; tempo_split = "expand.dots = FALSE" ;  three_dots_log = c(FALSE, FALSE, FALSE, FALSE) ; col2_i2 = "match.call" ; col3_i2 = "match.call(expand.dots = FALSE)" ; arg_user_setting_x = "FUN1" ; warn = "WARNING" ; warn_count = 1 ; lib_path = NULL ; error_text = " INSIDE P1::F1"
+    #  arg_full = list(definition = sys.function(sys.parent()), call = sys.call(sys.parent()), expand.dots = TRUE, envir = parent.frame(2L)) ; arg_full_names = c("definition", "call", "expand.dots", "envir") ; tempo_split = c("sys.function(sys.parent())", "expand.dots = FALSE", "sys.call(sys.parent())") ;  three_dots_log = c(FALSE, FALSE, FALSE, FALSE) ; col2_i2 = "match.call" ; col3_i2 = "match.call(sys.function(sys.parent()), expand.dots = FALSE, sys.call(sys.parent()))" ; arg_user_setting_x = "FUN1" ; warn = "WARNING" ; warn_count = 1 ; lib_path = NULL ; error_text = " INSIDE P1::F1"
+    #  arg_full = list(... = "", collapse = " ", recycle0 = FALSE) ; arg_full_names = c("...", "collapse", "recycle0") ; tempo_split = c("AA", "collapse = \" \"", "BB", "recycle0 = FALSE") ; three_dots_log = c(TRUE, FALSE, FALSE) ; col2_i2 = "paste0" ; col3_i2 = 'paste0("AA", collapse = " ", "BB", recycle0 = FALSE)' ; arg_user_setting_x = "FUN1" ;error_text = " INSIDE P1::F1" ; warn = "WARNING" ; warn_count = 1 ; lib_path = NULL ; error_text = " INSIDE P1::F1"
+    #  arg_full = list(... = "", collapse = " ", recycle0 = FALSE) ; arg_full_names = c("...", "collapse", "recycle0") ; tempo_split = c("AA", "collapse = \" \"", "BB") ; three_dots_log = c(TRUE, FALSE, FALSE) ; col2_i2 = "paste0" ; col3_i2 = 'paste0("AA", collapse = " ", "BB")' ; arg_user_setting_x = "FUN1" ; warn = "WARNING" ; warn_count = 1 ; lib_path = NULL ; error_text = " INSIDE P1::F1"
+    # arg_full = list(x = "", ... = "") ; arg_full_names = c("x", "...") ; tempo_split = "x" ; three_dots_log = c(FALSE, TRUE) ; i2 = 1 ; col1_i2 = 1 ; col2_i2 =  "mean" ; arg_user_setting_x = "\"FUN1\"" ; error_text = "" ; warn = NULL ; warn_count = 0 ; lib_path = NULL ; error_text = " INSIDE P1::F1"
+    # arg_full = list(lib.loc = NULL, priority = NULL, noCache = FALSE, fields = NULL, subarch = .Platform$r_arch, ... = "") ; arg_full_names = c("lib.loc", "priority", "noCache", "fields", "subarch", "...") ; tempo_split = c("lib.loc = NULL", "subarch =  .Platform$r_arch") ; three_dots_log = c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE) ; i2 = 1 ; col1_i2 = 1 ; col2_i2 =  "installed.packages" ; arg_user_setting_x = "\"FUN1\"" ; error_text = "" ; warn = NULL ; warn_count = 0 ; lib_path = NULL ; error_text = " INSIDE P1::F1"
+
+
+    #### package name
+    package_name <- "saferDev" # write NULL if the function developed is not in a package
+    #### end package name
+
+    #### internal error report link
+    internal_error_report_link <- base::paste0("https://github.com/safer-r/", package_name, "/issues/new", collapse = NULL, recycle0 = FALSE) # link where to post an issue indicated in an internal error message. Write NULL if no link to propose, or no internal error message
+    #### end internal error report link
+
+    #### function name
+    tempo_settings <- base::as.list(x = base::match.call(definition = base::sys.function(which = base::sys.parent(n = 0)), call = base::sys.call(which = base::sys.parent(n = 0)), expand.dots = FALSE, envir = base::parent.frame(n = 2L))) # warning: I have written n = 0 to avoid error when a safer function is inside another functions. In addition, arguments values retrieved are not evaluated base::match.call, but this is solved with get() below
+    function_name <- base::paste0(tempo_settings[[1]], "()", collapse = NULL, recycle0 = FALSE) 
+    # function name with "()" paste, which split into a vector of three: c("::()", "package ()", "function ()") if "package::function()" is used.
+    if(function_name[1] == "::()" | function_name[1] == ":::()"){
+        function_name <- function_name[3]
+    }
+    #### end function name
+
+    #### arguments settings
+    arg_user_setting <- tempo_settings[-1] # list of the argument settings (excluding default values not provided by the user). Always a list, even if 1 argument. So ok for lapply() usage (management of NA section)
+    arg_user_setting_names <- base::names(x = arg_user_setting)
+    # evaluation of values if they are expression, call, etc.
+    if(base::length(x = arg_user_setting) != 0){
+        arg_user_setting_eval <- base::lapply(
+            X = arg_user_setting_names, 
+            FUN = function(x){
+                base::get(x = x, pos = -1L, envir = base::parent.frame(n = 2), mode = "any", inherits = TRUE) # n = 2 because of lapply(), inherit = TRUE to be sure to correctly evaluate
+            }
+        )
+        base::names(x = arg_user_setting_eval) <- arg_user_setting_names
+    }else{
+        arg_user_setting_eval <- NULL
+    }
+    # end evaluation of values if they are expression, call, etc.
+    arg_names <- base::names(x = base::formals(fun = base::sys.function(which = base::sys.parent(n = 2)), envir = base::parent.frame(n = 1))) # names of all the arguments
+    #### end arguments settings
+
+    #### error_text initiation
+
+    ######## basic error text start
+    error_text <- base::paste0(base::unlist(x = error_text, recursive = TRUE, use.names = TRUE), collapse = "", recycle0 = FALSE) # convert everything to string. if error_text is a string, changes nothing. If NULL or empty (even list) -> "" so no need to check for management of NULL or empty value
+    package_function_name <- base::paste0(
+        base::ifelse(test = base::is.null(x = package_name), yes = "", no = base::paste0(package_name, base::ifelse(test = base::grepl(x = function_name, pattern = "^\\.", ignore.case = FALSE, perl = FALSE, fixed = FALSE, useBytes = FALSE), yes = ":::", no = "::"), collapse = NULL, recycle0 = FALSE)), 
+        function_name,
+        collapse = NULL, 
+        recycle0 = FALSE
+    )
+    error_text_start <- base::paste0(
+        "ERROR IN ", # must not be changed, because this "ERROR IN " string is used for text replacement
+        package_function_name, 
+        base::ifelse(test = error_text == "", yes = ".", no = error_text), 
+        "\n\n", 
+        collapse = NULL, 
+        recycle0 = FALSE
+    )
+    ######## end basic error text start
+
+    ######## internal error text
+    intern_error_text_start <- base::paste0(
+        package_function_name, 
+        base::ifelse(test = error_text == "", yes = ".", no = error_text), 
+        "\n\n", 
+        collapse = NULL, 
+        recycle0 = FALSE
+    )
+    intern_error_text_end <- base::ifelse(test = base::is.null(x = internal_error_report_link), yes = "", no = base::paste0("\n\nPLEASE, REPORT THIS ERROR HERE: ", internal_error_report_link, ".", collapse = NULL, recycle0 = FALSE))
+    ######## end internal error text
+
+    ######## error text when embedding
+    # use this in the error_text of safer functions if present below 
+    embed_error_text  <- base::sub(pattern = "^ERROR IN ", replacement = " INSIDE ", x = error_text_start, ignore.case = FALSE, perl = FALSE, fixed = FALSE, useBytes = FALSE)
+    embed_error_text  <- base::sub(pattern = "\n*$", replacement = "", x = embed_error_text, ignore.case = FALSE, perl = FALSE, fixed = FALSE, useBytes = FALSE) # remove all the trailing \n, because added later
+    ######## end error text when embedding
+
+    #### end error_text initiation
+
+    #### argument primary checking
+
+    ######## arg with no default values
+    mandat_args <- base::c(
+        "arg_full",
+        "arg_full_names", 
+        "tempo_split", 
+        "three_dots_log", 
+        "i2", 
+        "col1_i2", 
+        "col2_i2",
+        "arg_user_setting_x", 
+        "warn",
+        "warn_count",
+        "lib_path", 
+        "error_text"
+    )
+    tempo <- base::eval(expr = base::parse(text = base::paste0("base::c(base::missing(", base::paste0(mandat_args, collapse = "),base::missing(", recycle0 = FALSE), "))", collapse = NULL, recycle0 = FALSE), file = "", n = NULL, prompt = "?", keep.source = base::getOption(x = "keep.source", default = NULL), srcfile = NULL, encoding = "unknown"), envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    if(base::any(tempo, na.rm = TRUE)){
+        tempo_cat <- base::paste0(
+            error_text_start, 
+            "FOLLOWING ARGUMENT", 
+            base::ifelse(test = base::sum(tempo, na.rm = TRUE) > 1, yes = "S HAVE", no = " HAS"), 
+            " NO DEFAULT VALUE AND REQUIRE ONE:\n", 
+            base::paste0(mandat_args[tempo], collapse = "\n", recycle0 = FALSE), 
+            collapse = NULL, 
+            recycle0 = FALSE
+        )
+        base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+    }
+    ######## end arg with no default values
+
+    ######## management of NULL arguments
+    # before NA checking because is.na(NULL) return logical(0) and all(logical(0)) is TRUE (but secured with & base::length(x = x) > 0)
+    tempo_arg <-base::c(
+        "arg_full",
+        # "arg_full_names", # inactivated because can be NULL
+        # "tempo_split", # inactivated because can be NULL
+        "three_dots_log", 
+        "i2", 
+        "col1_i2", 
+        "col2_i2",
+        "arg_user_setting_x", 
+        # "warn", # inactivated because can be NULL
+        "warn_count"
+        # "lib_path", # inactivated because can be NULL
+        # "error_text" # inactivated because NULL converted to "" above
+    )
+    tempo_log <- base::sapply(X = base::lapply(X = tempo_arg, FUN = function(x){base::get(x = x, pos = -1L, envir = base::parent.frame(n = 2), mode = "any", inherits = FALSE)}), FUN = function(x){base::is.null(x = x)}, simplify = TRUE, USE.NAMES = TRUE) # parent.frame(n = 2) because sapply(lapply())
+    if(base::any(tempo_log, na.rm = TRUE)){ # normally no NA with base::is.null()
+        tempo_cat <- base::paste0(
+            error_text_start, 
+            base::ifelse(test = base::sum(tempo_log, na.rm = TRUE) > 1, yes = "THESE ARGUMENTS", no = "THIS ARGUMENT"), 
+            " CANNOT BE NULL:\n", 
+            base::paste0(tempo_arg[tempo_log], collapse = "\n", recycle0 = FALSE), 
+            collapse = NULL, 
+            recycle0 = FALSE
+        )
+        base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+    }
+    ######## end management of NULL arguments
+
+    ######## management of empty non NULL arguments
+    # # before NA checking because is.na(logical()) is logical(0) (but secured with & base::length(x = x) > 0)
+    tempo_arg <-base::c(
+        # "arg_full", # inactivated because can be empty
+        "arg_full_names", 
+        # "tempo_split", # inactivated because can be empty
+        "three_dots_log", 
+        "i2", 
+        "col1_i2", 
+        "col2_i2",
+        "arg_user_setting_x", 
+        "warn",
+        "warn_count", 
+        "lib_path"
+        # "error_text" # inactivated because empty value converted to "" above
+    )
+    tempo_arg_user_setting_eval <- arg_user_setting_eval[base::names(x = arg_user_setting_eval) %in% tempo_arg]
+    if(base::length(x = tempo_arg_user_setting_eval) != 0){
+        tempo_log <- base::suppressWarnings(
+            expr = base::sapply(
+                X = tempo_arg_user_setting_eval, 
+                FUN = function(x){
+                    base::length(x = x) == 0 & ! base::is.null(x = x)
+                }, 
+                simplify = TRUE, 
+                USE.NAMES = TRUE
+            ), 
+            classes = "warning"
+        ) # no argument provided by the user can be empty non NULL object. Warning: would not work if arg_user_setting_eval is a vector (because treat each element as a compartment), but ok because it is always a list, even if 0 or 1 argument in the developed function
+        if(base::any(tempo_log, na.rm = TRUE)){
+            tempo_cat <- base::paste0(
+                error_text_start, 
+                base::ifelse(test = base::sum(tempo_log, na.rm = TRUE) > 1, yes = "THESE ARGUMENTS", no = "THIS ARGUMENT"), 
+                " CANNOT BE AN EMPTY NON NULL OBJECT:\n", 
+                base::paste0(base::names(x = tempo_arg_user_setting_eval)[tempo_log], collapse = "\n", recycle0 = FALSE), 
+                collapse = NULL, 
+                recycle0 = FALSE
+            )
+            base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+        }
+    }
+    ######## end management of empty non NULL arguments
+
+    ######## management of NA arguments
+    if(base::length(x = arg_user_setting_eval) != 0){
+        tempo_log <- base::suppressWarnings(
+            expr = base::sapply(
+                X = base::lapply(
+                    X = arg_user_setting_eval, 
+                    FUN = function(x){
+                        base::is.na(x = x) # if x is empty, return empty, but ok with below
+                    }
+                ), 
+                FUN = function(x){
+                    base::all(x = x, na.rm = TRUE) & base::length(x = x) > 0 # if x is empty, return FALSE, so OK
+                }, 
+                simplify = TRUE, 
+                USE.NAMES = TRUE
+            ), 
+            classes = "warning"
+        ) # no argument provided by the user can be just made of NA. is.na(NULL) returns logical(0), the reason why base::length(x = x) > 0 is used # warning: all(x = x, na.rm = TRUE) but normally no NA because base::is.na() used here. Warning: would not work if arg_user_setting_eval is a vector (because treat each element as a compartment), but ok because it is always a list, even if 0 or 1 argument in the developed function
+        if(base::any(tempo_log, na.rm = TRUE)){
+            tempo_cat <- base::paste0(
+                error_text_start, 
+                base::ifelse(test = base::sum(tempo_log, na.rm = TRUE) > 1, yes = "THESE ARGUMENTS", no = "THIS ARGUMENT"), 
+                " CANNOT BE MADE OF NA ONLY:\n", 
+                base::paste0(base::names(x = arg_user_setting_eval)[tempo_log], collapse = "\n", recycle0 = FALSE), 
+                collapse = NULL, 
+                recycle0 = FALSE
+            )
+            base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+        }
+    }
+    ######## end management of NA arguments
+
+    #### end argument primary checking
+
+    #### environment checking
+
+    ######## safer_check argument checking
+    # not used here
+    ######## end safer_check argument checking
+
+    ######## check of lib_path
+    # check already done in the main safer function
+    ######## end check of lib_path
+
+    ######## check of the required functions from the required packages
+    # saferDev::arg_check is required here
+    # but check already done in the main safer function
+    ######## end check of the required functions from the required packages
+
+    ######## critical operator checking
+    # check already done in the main safer function
+    ######## end critical operator checking
+
+    #### end environment checking
+
+    #### argument secondary checking
+
+    ######## argument checking with arg_check()
+    argum_check <- NULL
+    text_check <- NULL
+    checked_arg_names <- NULL # for function debbuging: used by r_debugging_tools
+    arg_check_error_text <- base::paste0("ERROR ", embed_error_text, "\n\n", collapse = NULL, recycle0 = FALSE) # must be used instead of error_text = embed_error_text when several arg_check are performed on the same argument (tempo1, tempo2, see below)
+    ee <- base::expression(argum_check <- base::c(argum_check, tempo$problem) , text_check <- base::c(text_check, tempo$text) , checked_arg_names <- base::c(checked_arg_names, tempo$object.name))
+    # add as many lines as below, for each of your arguments of your function in development
+    tempo <-  saferDev::arg_check(data = arg_full, class = "list", typeof = NULL, mode = NULL, length = NULL, prop = FALSE, double_as_integer_allowed = FALSE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = TRUE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    if( ! base::is.null(x = arg_full_names)){ # for all arguments that can be NULL, write like this:
+        tempo <-  saferDev::arg_check(data = arg_full_names, class = "vector", typeof = "character", mode = NULL, length = NULL, prop = FALSE, double_as_integer_allowed = FALSE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = TRUE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    }
+    if( ! base::is.null(x = tempo_split)){
+        tempo <-  saferDev::arg_check(data = tempo_split, class = "vector", typeof = "character", mode = NULL, length = NULL, prop = FALSE, double_as_integer_allowed = FALSE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = TRUE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    }
+    tempo <-  saferDev::arg_check(data = three_dots_log, class = "vector", typeof = "logical", mode = NULL, length = NULL, prop = FALSE, double_as_integer_allowed = FALSE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = TRUE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    tempo <-  saferDev::arg_check(data = i2, class = "vector", typeof = "integer", mode = NULL, length = 1, prop = FALSE, double_as_integer_allowed = TRUE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = FALSE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    tempo <-  saferDev::arg_check(data = col1_i2, class = "vector", typeof = "integer", mode = NULL, length = 1, prop = FALSE, double_as_integer_allowed = TRUE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = FALSE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    tempo <-  saferDev::arg_check(data = col2_i2, class = "vector", typeof = "character", mode = NULL, length = 1, prop = FALSE, double_as_integer_allowed = FALSE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = TRUE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    tempo <-  saferDev::arg_check(data = arg_user_setting_x, class = "vector", typeof = "character", mode = NULL, length = NULL, prop = FALSE, double_as_integer_allowed = FALSE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = TRUE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    if( ! base::is.null(x = warn)){ # for all arguments that can be NULL, write like this:
+        tempo <-  saferDev::arg_check(data = warn, class = "vector", typeof = "character", mode = NULL, length = 1, prop = FALSE, double_as_integer_allowed = FALSE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = TRUE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    }
+    tempo <-  saferDev::arg_check(data = warn_count, class = "vector", typeof = "integer", mode = NULL, length = 1, prop = FALSE, double_as_integer_allowed = TRUE, options = NULL, all_options_in_data = FALSE, na_contain = TRUE, neg_values = FALSE, inf_values = TRUE, print = FALSE, data_name = NULL, data_arg = TRUE, safer_check = FALSE, lib_path = lib_path, error_text = embed_error_text) ; base::eval(expr = ee, envir = base::environment(fun = NULL), enclos = base::environment(fun = NULL))
+    # lib_path already checked above
+    # error_text converted to single string above
+    if( ! base::is.null(x = argum_check)){
+        if(base::any(argum_check, na.rm = TRUE)){
+            base::stop(base::paste0("\n\n================\n\n", base::paste0(text_check[argum_check], collapse = "\n\n", recycle0 = FALSE), "\n\n================\n\n", collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+        }
+    }
+    # check with r_debugging_tools
+    # source("https://gitlab.pasteur.fr/gmillot/debugging_tools_for_r_dev/-/raw/v1.8/r_debugging_tools.R") ; eval(parse(text = str_basic_arg_check_dev)) ; eval(parse(text = str_arg_check_with_fun_check_dev)) # activate this line and use the function (with no arguments left as NULL) to check arguments status and if they have been checked using saferDev::arg_check()
+    # end check with r_debugging_tools
+    ######## end argument checking with arg_check()
+
+    ######## management of "" in arguments of mode character
+    tempo_arg <- base::c(
+        "arg_full_names", 
+        "tempo_split",
+        "col2_i2",
+        "arg_user_setting_x",
+        "warn"
+        # "lib_path" # inactivated because already checked above
+        # "error_text" # inactivated because can be ""
+    )
+    # nocov start
+    # codecov inactivated because it is an internal control of code writing, impossible to cover with argument values.
+    tempo_log <- ! base::sapply(X = base::lapply(X = tempo_arg, FUN = function(x){base::get(x = x, pos = -1L, envir = base::parent.frame(n = 2), mode = "any", inherits = FALSE)}), FUN = function(x){if(base::is.null(x = x)){base::return(TRUE)}else{base::all(base::mode(x = x) == "character", na.rm = TRUE)}}, simplify = TRUE, USE.NAMES = TRUE) # parent.frame(n = 2) because sapply(lapply())  #  need to test is.null() here
+    if(base::any(tempo_log, na.rm = TRUE)){
+        # This check is here in case the developer has not correctly fill tempo_arg
+        tempo_cat <- base::paste0(
+            "INTERNAL ERROR IN THE BACKBONE PART OF ", 
+            intern_error_text_start, 
+            "IN THE SECTION \"management of \"\" in arguments of mode character\"\n", 
+            base::ifelse(test = base::sum(tempo_log, na.rm = TRUE) > 1, yes = "THESE ARGUMENTS ARE", no = "THIS ARGUMENT IS"), 
+            " NOT CLASS \"character\":\n", 
+            base::paste0(tempo_arg[tempo_log], collapse = "\n", recycle0 = FALSE), 
+            intern_error_text_end, 
+            collapse = NULL, 
+            recycle0 = FALSE
+        )
+        base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+        # nocov end
+    }else{
+        tempo_log <- base::sapply(X = base::lapply(X = tempo_arg, FUN = function(x){base::get(x = x, pos = -1L, envir = base::parent.frame(n = 2), mode = "any", inherits = FALSE)}), FUN = function(x){base::any(x == "", na.rm = TRUE)}, simplify = TRUE, USE.NAMES = TRUE) # parent.frame(n = 2) because sapply(lapply()).  # for character argument that can also be NULL, if NULL -> returns FALSE. Thus no need to test is.null()
+        if(base::any(tempo_log, na.rm = TRUE)){
+            tempo_cat <- base::paste0(
+                error_text_start, 
+                base::ifelse(test = base::sum(tempo_log, na.rm = TRUE) > 1, yes = "THESE ARGUMENTS\n", no = "THIS ARGUMENT\n"), 
+                base::paste0(tempo_arg[tempo_log], collapse = "\n", recycle0 = FALSE),
+                "\nCANNOT CONTAIN EMPTY STRING \"\".", 
+                collapse = NULL, 
+                recycle0 = FALSE
+            )
+            base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL) # == in stop() to be able to add several messages between ==
+        }
+    }
+    ######## end management of "" in arguments of mode character
+
+    #### end argument secondary checking
+
+    #### second round of checking and data preparation
+
+    ######## reserved words
+    ######## end reserved words
+
+    ######## code that protects set.seed() in the global environment
+    ######## end code that protects set.seed() in the global environment
+
+    ######## warning initiation
+    ######## end warning initiation
+
+    ######## graphic device checking
+    ######## end graphic device checking
+
+    ######## other checkings
+    if( ! ((base::length(x = arg_full_names) == base::length(x = three_dots_log)) | (base::is.null(x = arg_full_names) & base::length(x = three_dots_log) == 1 & base::sum(three_dots_log, na.rm = TRUE) == 0))){ # either equal length, or arg_full_names = NULL and three_dots_log = FALSE
+            tempo_cat <- base::paste0(
+                error_text_start, 
+                "\nARGUMENTS arg_full_names AND three_dots_log MUST HAVE THE SAME LENGTH, OR THE FIRST BEING NULL AND THE SECOND BEING FALSE.\narg_full_names (", 
+                base::length(x = arg_full_names), 
+                "):\n", 
+                base::paste0(arg_full_names, collapse = "\n", recycle0 = FALSE), 
+                "\nthree_dots_log (", 
+                base::length(x = three_dots_log), 
+                "):\n", 
+                base::paste0(three_dots_log, collapse = "\n", recycle0 = FALSE), 
+                collapse = NULL, 
+                recycle0 = FALSE
+            )
+            base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL) # == in stop() to be able to add several messages between ==
+    }
+    ######## end other checkings
+
+    #### end second round of checking and data preparation
+
+    #### main code
+    pattern1 <- "^\\s*([a-zA-Z]|\\.[a-zA-Z._])[a-zA-Z0-9._]*[\\s\\r\\n]*=" # looking for the arg name
+    good_args <- NULL
+    missing_args <- NULL
+    missing_args_names <- NULL
+    missing_full_arg_name_log <- base::logical(length = 0L)
+    if(base::any(three_dots_log, na.rm = TRUE)){
+        arg_full_names <- arg_full_names[ ! three_dots_log]
+        arg_full <- arg_full[ ! three_dots_log]
+    }
+    if(base::length(x = arg_full) == 0){
+        # col5 <- base::c(col5, "...") # inactivated because already filled above
+        col6 <- ""
+        col7 <- ""
+        col8 <- ""
+    }else{
+        # scan for args names present in tempo_split
+        good_count <- 0 # to define if all the args are written (not considering ...)
+        if(base::length(x = tempo_split) == 0 & base::length(x = arg_full_names) > 0){
+            missing_args_names <- arg_full_names
+        }else{
+            missing_full_arg_name_log <- base::rep(x = TRUE, times = base::length(x = tempo_split)) # will help for counting the tempo_split args without arg name before. All the remaining TRUE will be values that need an arg name
+            for(i3 in 1:base::length(x = arg_full_names)){
+                pattern3 <- base::paste0("^[\\s\\r\\n]*", arg_full_names[i3], "[\\s]*=", collapse = NULL, recycle0 = FALSE) # looking for the arg name
+                tempo.log <- base::grepl(x = tempo_split, pattern = pattern3, perl = TRUE, ignore.case = FALSE, fixed = FALSE, useBytes = FALSE)
+                if(base::sum(tempo.log, na.rm = TRUE) == 1){ # arg i3 has its names written in the args between ()
+                    good_args <- base::c(good_args, tempo_split[tempo.log])
+                    missing_full_arg_name_log <- missing_full_arg_name_log & ! tempo.log # remove the position of the taken arg in tempo_split
+                    good_count <- good_count + 1
+                }else if(base::sum(tempo.log, na.rm = TRUE) == 0){ # arg i3 has not its names written in the args between ()
+                    missing_args_names <- base::c(missing_args_names, arg_full_names[i3])
+                }else{
+                    tempo_cat <- base::paste0(
+                        error_text_start,
+                        "pattern3 DETECTED SEVERAL TIMES IN ARGUMENTS.\n\npattern3:\n", 
+                        base::paste0(pattern3, collapse = "\n", recycle0 = FALSE), 
+                        "\n\ntempo_split:\n", 
+                        base::paste0(tempo_split[tempo.log], collapse = "\n", recycle0 = FALSE), 
+                        "\n\nCHECK IF THE ARGUMENT IS PRESENT SEVERAL TIMES IN LINE ", 
+                        col1_i2, 
+                        ", INSIDE ", 
+                        col2_i2, 
+                        collapse = NULL, 
+                        recycle0 = FALSE
+                    )
+                    base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", base::ifelse(test = base::is.null(x = warn), yes = "", no = base::paste0("IN ADDITION\nWARNING", base::ifelse(test = warn_count > 1, yes = "S", no = ""), ":\n\n", warn, collapse = NULL, recycle0 = FALSE)), collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+                }
+            }
+        }
+        # end scan for args names present in tempo_split
+        # removal of arguments without arg name before in missing_full_arg_name_log
+        supp_args_in_three_dots <- NULL
+        if(base::any(three_dots_log, na.rm = TRUE)){
+            if(base::length(x = missing_full_arg_name_log) != 0){ # no need to add & base::length(tempo_split) != 0 because both have the same length
+                for(i3 in 1:base::length(x = tempo_split)){
+                    if(base::grepl(x = tempo_split[i3], pattern = pattern1, perl = TRUE, ignore.case = FALSE, fixed = FALSE, useBytes = FALSE) & missing_full_arg_name_log[i3] == TRUE){ # missing_full_arg_name_log[i3] == TRUE means values that need an arg name but detection of a = with only arg name rule before
+                        missing_full_arg_name_log[i3] <- FALSE # remove this arg from the args that need an arg name
+                        supp_args_in_three_dots <- base::c(supp_args_in_three_dots, tempo_split[i3])
+                    }
+                }
+            }
+        }
+        # end removal of arguments without arg name before in missing_full_arg_name_log
+        # detection of arguments that starts by the same string in the sub function (example: path_in and path_out)
+        tempo_col8_end <- NULL
+        same_begin <- base::unlist( # common string of all the arguments
+            x = base::lapply(
+                FUN = function(x){
+                    tempo_log <- base::grepl(x = arg_full_names, pattern = base::paste0("^", x, collapse = NULL, recycle0 = FALSE), perl = FALSE, ignore.case = FALSE, fixed = FALSE, useBytes = FALSE)
+                    if(base::sum(tempo_log, na.rm = TRUE) > 1){ 
+                        base::return(arg_full_names[tempo_log][base::which.min(x = base::nchar(x = arg_full_names[tempo_log], type = "chars", allowNA = FALSE, keepNA = NA))])
+                    }
+                }, 
+                X = arg_full_names
+            ),
+            recursive = TRUE, 
+            use.names = TRUE
+        )
+        if( ! base::is.null(x = same_begin)){
+            tempo_col8_end <- base::paste0("WARNING: SEVERAL ARGUMENT NAMES OF THE FUNCTION BEGINNING WITH ", base::paste0(same_begin[ ! base::is.null(x = same_begin)], collapse = " ", recycle0 = FALSE), collapse = NULL, recycle0 = FALSE)
+        }
+        # end detection of arguments that starts by the same string in the sub function (example: path_in and path_out)
+        # checking if arg name are not fully written
+        arg_full_symbol_type <- base::sapply(X = arg_full, FUN = function(x){base::all(base::typeof(x = x) == "symbol", na.rm =TRUE)}, simplify = TRUE, USE.NAMES = TRUE) # to check if any arg without optional value are completed with obs arg values
+        if(base::any(arg_full_symbol_type, na.rm =TRUE) & base::length(x = tempo_split) == 0){
+            tempo_cat <- base::paste0(
+                error_text_start,
+                "THE TESTED FUNCTION ", 
+                arg_user_setting_x, 
+                " SEEMS TO HAVE A WRITING ERROR IN LINE ",  
+                col1_i2, 
+                " AND FUNCTION ", 
+                col2_i2, 
+                ".\nPLEASE, RUN THE TESTED FUNCTION FIRST.", 
+                collapse = NULL, 
+                recycle0 = FALSE
+            )
+            base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", base::ifelse(test = base::is.null(x = warn), yes = "", no = base::paste0("IN ADDITION\nWARNING", base::ifelse(test = warn_count > 1, yes = "S", no = ""), ":\n\n", warn, collapse = NULL, recycle0 = FALSE)), collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+        }
+        tempo_col8 <- NULL
+        if(( ! base::is.null(x = missing_args_names)) & base::length(x = tempo_split) != 0){
+            for(i3 in 1:base::length(x = tempo_split)){
+                if(base::grepl(x = tempo_split[i3], pattern = pattern1, perl = TRUE, ignore.case = FALSE, fixed = FALSE, useBytes = FALSE)){
+                    tempo_arg_name <- base::strsplit(x = tempo_split[i3], split = "[\\s\\r\\n]*=", perl = TRUE, fixed = FALSE, useBytes = FALSE)[[1]][1]
+                    tempo_arg_name <- base::gsub(pattern = "^[\\s]*", replacement = "", x = tempo_arg_name, ignore.case = FALSE, perl = TRUE, fixed = FALSE, useBytes = FALSE) # removing leading space
+                    tempo.log <- base::grepl(x = missing_args_names, pattern = base::paste0("^", tempo_arg_name, collapse = NULL, recycle0 = FALSE), perl = FALSE, ignore.case = FALSE, fixed = FALSE, useBytes = FALSE) # check if any missing_args_names starts by tempo_arg_name
+                    if(base::sum(tempo.log, na.rm = TRUE) > 1){ # this is a secu that should never happens, because should already been detected by base::grepl(x = tempo_arg_name, pattern = base::paste0("^", same_begin, collapse = "|")
+                        tempo_cat <- base::paste0(
+                            error_text_start, 
+                            "IN LINE ", 
+                            i2, 
+                            " AND IN THE ", 
+                            col2_i2, 
+                            " FUNCTION.\nDETECTION OF A NON FULLY WRITTEN ARGUMENT THAT CORRESPOND TO SEVERAL ARGUMENTS STARTING BY THE SAME CHARACTERS.\n\nWRITTEN ARGUMENT:\n", 
+                            tempo_arg_name, 
+                            "\n\nMISSING ARGUMENTS:\n", 
+                            base::paste0(missing_args_names, collapse = "\n", recycle0 = FALSE), 
+                            "\n\nMISSING ARGUMENTS STARTING BY THE SAME CHARACTERS:\n", 
+                            base::paste0(missing_args_names[tempo.log], collapse = "\n", recycle0 = FALSE), 
+                            collapse = NULL, 
+                            recycle0 = FALSE
+                        )
+                        base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", base::ifelse(test = base::is.null(x = warn), yes = "", no = base::paste0("IN ADDITION\nWARNING", base::ifelse(test = warn_count > 1, yes = "S", no = ""), ":\n\n", warn, collapse = NULL, recycle0 = FALSE)), collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+                    }
+                    if(base::sum(tempo.log, na.rm = TRUE) == 1){ # this means that an argument is missing because not fully written
+                        tempo_col8 <- base::c(
+                            tempo_col8, 
+                            base::paste0(
+                                base::ifelse(test = base::is.null(x = tempo_col8), yes = "", no = " ; "), 
+                                base::paste0(tempo_arg_name, " ARG NAME HAS TO BE FULLY WRITTEN ", missing_args_names[tempo.log], collapse = NULL, recycle0 = FALSE), 
+                                collapse = NULL, 
+                                recycle0 = FALSE
+                            )
+                        )
+                    }
+                }
+            }
+            if(( ! base::is.null(x = tempo_col8)) & ! base::is.null(x = tempo_col8_end)){
+                tempo_col8 <- base::paste0(tempo_col8, " & ", tempo_col8_end, collapse = NULL, recycle0 = FALSE)
+            }
+        }
+        # end checking if arg name are not fully written
+        # when ... is present or not
+            # Of note, when ... is present, argument values must be preceeded by their arg name. This means that values without arg names of the scanned function are ...
+            # Otherwise, the first value without names must take the first arg name not already used, the second value without names must take the second, etc., then finish by the none used arg names with their default values
+        missing_arg_log <- arg_full_names %in% missing_args_names
+        if(base::any(three_dots_log, na.rm = TRUE) & base::all( ! arg_full_symbol_type, na.rm = TRUE)){ # ... present but no mandatory args with value to set
+            if(base::sum(missing_arg_log, na.rm = TRUE) > 0){ # if = 0, then missing_args remains NULL
+                missing_args <- base::paste0(arg_full_names[missing_arg_log], " = ", arg_full[missing_arg_log], collapse = NULL, recycle0 = FALSE) # missing arg values with names
+                good_args <- base::c(
+                    tempo_split[ ! tempo_split %in% good_args], # arg values without names
+                    good_args, # obs arg values with names
+                    base::paste0(" ", missing_args, collapse = NULL, recycle0 = FALSE) # missing arg values with names #a space added to finally have comma followed by a space
+                )
+            }
+        }else{
+            count_good_args <- 0
+            final <- NULL
+            # missing_args <-  NULL # already above
+            for(i3 in 1:base::length(x = arg_full_names)){ # here I cannot have more args than base::length(arg_full_names)
+                if(missing_arg_log[i3] == TRUE){
+                    if(base::sum(missing_full_arg_name_log, na.rm = FALSE) > 0){ # this means that remains obs arg with no arg names written
+                        tempo <- base::paste0(arg_full_names[i3], " = ", tempo_split[base::which(x = missing_full_arg_name_log == TRUE, arr.ind = FALSE, useNames = TRUE)[1]], collapse = NULL, recycle0 = FALSE)
+                        missing_full_arg_name_log[base::which(x = missing_full_arg_name_log == TRUE, arr.ind = FALSE, useNames = TRUE)[1]] <- FALSE
+                    }else{
+                        tempo <- base::paste0(arg_full_names[i3], " = ", if(base::is.null(x = arg_full[[i3]])){"NULL"}else{base::deparse(expr = arg_full[[i3]], width.cutoff = 60L, backtick = FALSE, control = base::c("keepNA", "keepInteger", "niceNames", "showAttributes"), nlines = -1L)}, collapse = NULL, recycle0 = FALSE)
+                    }
+                    missing_args <- base::c(missing_args, tempo)
+                    final <- base::c(final, base::ifelse(test = i3 == 1, yes = tempo, no = base::paste0(" ", tempo, collapse = NULL, recycle0 = FALSE))) # take the first pos always of the args with no arg names
+                }else{
+                    count_good_args <- count_good_args + 1
+                    final <- base::c(final, good_args[count_good_args])
+                }
+                arg_full_symbol_type[i3] <- FALSE
+            }
+            good_args <- final
+            if(base::any(arg_full_symbol_type, na.rm = FALSE)){
+                # nocov start
+                # codecov inactivated because it is an internal control of code writing, impossible to cover with argument values.
+                tempo_cat <- base::paste0("INTERNAL ERROR 1 IN ", intern_error_text_end, "ARGUMENT WITHOUT OPTIONAL VALUES (MANDATORY ARGS) CANNOT REMAIN WITHOUT VALUE:\n\narg_full_symbol_type:\n", base::paste0(arg_full_symbol_type, collapse = "\n", recycle0 = FALSE), "\n\narg_full_names:\n", base::paste0(arg_full_names, collapse = "\n", recycle0 = FALSE), intern_error_text_end, collapse = NULL, recycle0 = FALSE) ; base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", base::ifelse(test = base::is.null(x = warn), yes = "", no = base::paste0("IN ADDITION\nWARNING", base::ifelse(test = warn_count > 1, yes = "S", no = ""), ":\n\n", warn, collapse = NULL, recycle0 = FALSE)), collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+                # nocov end
+            }
+            if(( ! base::any(three_dots_log, na.rm = TRUE)) & base::any(missing_full_arg_name_log, na.rm =TRUE)){
+                # nocov start
+                # codecov inactivated because it is an internal control of code writing, impossible to cover with argument values.
+                tempo_cat <- base::paste0("INTERNAL ERROR 2 IN ", intern_error_text_start, "CANNOT HAVE OBS ARGUMENT NOT INCORPORATED YET IF ! base::any(three_dots_log, na.rm = TRUE) IS TRUE:\n\nthree_dots_log:\n", base::paste0(three_dots_log, collapse = " ", recycle0 = FALSE), "\n\nmissing_full_arg_name_log:\n", base::paste0(missing_full_arg_name_log, collapse = " ", recycle0 = FALSE), intern_error_text_end, collapse = NULL, recycle0 = FALSE) ; base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", base::ifelse(test = base::is.null(x = warn), yes = "", no = base::paste0("IN ADDITION\nWARNING", base::ifelse(test = warn_count > 1, yes = "S", no = ""), ":\n\n", warn, collapse = NULL, recycle0 = FALSE)), collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+                # nocov end
+            }
+            if(count_good_args > base::length(x = tempo_split)){
+                # nocov start
+                # codecov inactivated because it is an internal control of code writing, impossible to cover with argument values.
+                tempo_cat <- base::paste0("INTERNAL ERROR 3 IN ", intern_error_text_start, "count_good_args + 1 CANNOT BE MORE THAN length(tempo_split):\n\nlength(tempo_split): ", base::length(x = tempo_split), "\n\ncount_good_args + 1: ", count_good_args + 1, intern_error_text_end, collapse = NULL, recycle0 = FALSE) ; base::stop(base::paste0("\n\n================\n\n", tempo_cat, "\n\n================\n\n", base::ifelse(test = base::is.null(x = warn), yes = "", no = base::paste0("IN ADDITION\nWARNING", base::ifelse(test = warn_count > 1, yes = "S", no = ""), ":\n\n", warn, collapse = NULL, recycle0 = FALSE)), collapse = NULL, recycle0 = FALSE), call. = FALSE, domain = NULL)
+                # nocov end
+            }
+            if(base::any(three_dots_log, na.rm = TRUE) & base::any(missing_full_arg_name_log, na.rm =TRUE)){ # obs values not yet in good_args
+                if(count_good_args + 1 <= base::length(x = tempo_split)){
+                    good_args <- base::c(good_args, tempo_split[missing_full_arg_name_log])
+                }
+            }
+        }
+        # end when ... is present or not
+        # col5 done above
+        col6 <- base::paste0(missing_args_names, collapse = ", ", recycle0 = FALSE) # if NULL return ""
+        col7 <- base::paste0(missing_args, collapse = ", ", recycle0 = FALSE)  # if NULL return ""
+        tempo <- base::paste0(
+            col2_i2, 
+            "(", 
+            base::ifelse(test = ! base::is.null(x = supp_args_in_three_dots), yes = base::gsub(pattern = "^[\\s]*", replacement = "", x = base::paste0(supp_args_in_three_dots, collapse = ",", recycle0 = FALSE), perl = TRUE, ignore.case = FALSE, fixed = FALSE, useBytes = FALSE), no = ""), 
+            base::ifelse(test = ( ! base::is.null(x = supp_args_in_three_dots)) & ( ! base::is.null(x = good_args)) , yes = ",", no = ""), 
+            base::ifelse(test = ! base::is.null(x = good_args), yes = base::paste0(good_args, collapse = ",", recycle0 = FALSE), no = ""),
+            ")", 
+            collapse = NULL, 
+            recycle0 = FALSE
+        )
+        if(base::length(x = arg_full_names) == good_count){
+            col8 <- "GOOD"
+        }else{
+            col8 <- tempo
+        }
+        if( ! base::is.null(x = tempo_col8)){
+            col8 <- tempo_col8
+        }
+    }
+    #### end main code
+
+    #### warning output
+    # not required even if warnings. Because warn are just added in error messages.
+    #### end warning output
+
+    #### output
+    base::return(base::list(col6 = col6, col7 = col7, col8 = col8))
+    #### end output
+
+}
