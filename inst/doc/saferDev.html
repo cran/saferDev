@@ -271,10 +271,11 @@ and not <code>paste0(letters[1:2])</code>.</td>
 <tr class="even">
 <td align="left"><strong>arg_check()</strong></td>
 <td align="left">Check expected values of arguments of functions: class,
-type, mode, length, restricted values panel, kind of numeric values in
-addition to the distinction between ‘integer’ and ‘double’ (proportion
-only? Inf values authorized? negative values authorized? Integers of
-type ‘double’?).</td>
+type, mode, length (each tested exactly, same values, in the same
+order), restricted values panel, kind of numeric values in addition to
+the distinction between ‘integer’ and ‘double’ (proportion only? Inf
+values authorized? negative values authorized? Integers of type
+‘double’?).</td>
 </tr>
 <tr class="odd">
 <td align="left"><strong>colons_check()</strong></td>
@@ -282,7 +283,8 @@ type ‘double’?).</td>
 are all referenced by their package attribution. For instance:
 <code>base::mean()</code> and not <code>mean()</code>, or
 <code>saferDev:::.base_op_check()</code> and not
-<code>.base_op_check()</code>.</td>
+<code>.base_op_check()</code>. Use <a href="https://github.com/dreamrs/prefixer">prefixer</a> to directly
+modify yor code.</td>
 </tr>
 <tr class="even">
 <td align="left"><strong>env_check()</strong></td>

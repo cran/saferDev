@@ -6,7 +6,7 @@ testthat::test_that("get_message()", {
     str3 <- "message('ahah'); warning('ohoh')" # message and warning
     str4 <- "sum(1, 2, 3)" # nothing
     str5 <- "ggplot2::ggplot(data = data.frame(X = 1:10, stringsAsFactors = TRUE), mapping = ggplot2::aes(x = X)) + ggplot2::geom_histogram()" # ggplot and message
-    str6 <- "wilcox.test(c(1, 1, 3), c(1, 2, 4), paired = TRUE)" # warning
+    str6 <- "1+factor(1)" # warning
     str7 <- "ggplot2::ggplot(data = data.frame(X = c(1:10, NA), stringsAsFactors = TRUE), mapping = ggplot2::aes(x = X)) + ggplot2::geom_histogram()" # ggplot and warning
     str8 <-  "1+factor(1)" # warning message
     str9 <- "ggplot2::ggplot(data = data.frame(X = 'a', stringsAsFactors = FALSE), mapping = ggplot2::aes(x = X)) + ggplot2::geom_histogram()" # ggplot and error
@@ -377,6 +377,7 @@ testthat::test_that("get_message()", {
             # warning message
             testthat::expect_no_error(get_message(data = str6, kind = "warning", header = TRUE, print_no = FALSE, text = "IN FUN1", env = NULL, safer_check = TRUE, lib_path = NULL, error_text = ""))
             stats_env <- as.environment("package:stats")
+            on.exit(expr = if(base::exists(x = "stats_env", inherits = FALSE)){base::rm(stats_env)}, add = TRUE, after = FALSE) # guarantee the removal of stats_env even if an expectation above fails
             testthat::expect_no_error(get_message(data = str6, kind = "warning", header = TRUE, print_no = FALSE, text = "IN FUN1", env = stats_env, safer_check = TRUE, lib_path = NULL, error_text = "")) # env
             rm(stats_env)
             testthat::expect_no_error(get_message(data = str7, kind = "warning", header = TRUE, print_no = FALSE, text = "IN FUN1", env = NULL, safer_check = TRUE, lib_path = NULL, error_text = "")) # ggplot2
@@ -384,6 +385,7 @@ testthat::test_that("get_message()", {
             # message
             testthat::expect_no_error(get_message(data = str2, kind = "message", header = TRUE, print_no = FALSE, text = "IN FUN1", env = NULL, safer_check = TRUE, lib_path = NULL, error_text = ""))
             stats_env <- as.environment("package:stats")
+            on.exit(expr = if(base::exists(x = "stats_env", inherits = FALSE)){base::rm(stats_env)}, add = TRUE, after = FALSE) # guarantee the removal of stats_env even if an expectation above fails
             testthat::expect_no_error(get_message(data = str2, kind = "message", header = TRUE, print_no = FALSE, text = "IN FUN1", env =  stats_env, safer_check = TRUE, lib_path = NULL, error_text = ""))
             rm(stats_env)
             testthat::expect_no_error(get_message(data = str5, kind = "message", header = TRUE, print_no = FALSE, text = "IN FUN1", env = NULL, safer_check = TRUE, lib_path = NULL, error_text = "")) # ggplot2
@@ -391,6 +393,7 @@ testthat::test_that("get_message()", {
         # if(base::any(base::class(x = tempo) %in% base::c("gg", "ggplot"), na.rm = TRUE)){
         testthat::expect_no_error(get_message(data = str7, kind = "warning", header = TRUE, print_no = FALSE, text = "IN FUN1", env = NULL, safer_check = TRUE, lib_path = NULL, error_text = ""))
         stats_env <- as.environment("package:stats")
+        on.exit(expr = if(base::exists(x = "stats_env", inherits = FALSE)){base::rm(stats_env)}, add = TRUE, after = FALSE) # guarantee the removal of stats_env even if an expectation above fails
         testthat::expect_no_error(get_message(data = str7, kind = "warning", header = TRUE, print_no = FALSE, text = "IN FUN1", env = stats_env, safer_check = TRUE, lib_path = NULL, error_text = ""))
         rm(stats_env)
         # end }else if(base::is.null(x = tempo.error)){
@@ -399,26 +402,14 @@ testthat::test_that("get_message()", {
                     # if(base::any(base::grepl(x = tempo.warn[[1]], pattern
                     testthat::expect_no_error(get_message(data = str6, kind = "warning", header = TRUE, print_no = FALSE, text = NULL, env = NULL, safer_check = TRUE, lib_path = NULL, error_text = ""))
                     result <- get_message(data = str6, kind = "warning", header = TRUE, print_no = FALSE, text = NULL, env = NULL, safer_check = TRUE, lib_path = NULL, error_text = "")
-                    if(detect_environment == "cran"){
-                        expected <- NULL
-                    }else if(detect_environment == "github" && base::Sys.info()[["sysname"]] != "Linux"){
-                        expected <- NULL
-                    }else{
-                        expected <- "WARNING MESSAGE REPORTED:\nIn wilcox.test.default(c(1, 1, 3), c(1, 2, 4), paired = TRUE): cannot compute exact p-value with zeroes\n"
-                    }
+                    expected <- "WARNING MESSAGE REPORTED:\nIn Ops.factor(1, factor(1)): '+' not meaningful for factors\n"
                     testthat::expect_equal(result, expected)
                     # end if(base::any(base::grepl(x = tempo.warn[[1]], pattern
                 # end if(header == TRUE){
                 # }else{
                 testthat::expect_no_error(get_message(data = str6, kind = "warning", header = FALSE, print_no = FALSE, text = NULL, env = NULL, safer_check = TRUE, lib_path = NULL, error_text = ""))
                 result <- get_message(data = str6, kind = "warning", header = FALSE, print_no = FALSE, text = NULL, env = NULL, safer_check = TRUE, lib_path = NULL, error_text = "")
-                if(detect_environment == "cran"){
-                    expected <- NULL
-                }else if(detect_environment == "github" && base::Sys.info()[["sysname"]] != "Linux"){
-                    expected <- NULL
-                }else{
-                    expected <- "simpleWarning in wilcox.test.default(c(1, 1, 3), c(1, 2, 4), paired = TRUE): cannot compute exact p-value with zeroes\n"
-                }
+                expected <- "simpleWarning in Ops.factor(1, factor(1)): '+' not meaningful for factors\n"
                 testthat::expect_equal(result, expected)
                 # end }else{
         # end if(kind == "warning" & base::length(x = tempo.warn) > 0){
@@ -492,6 +483,7 @@ testthat::test_that("get_message()", {
     expected <-  "ERROR MESSAGE REPORTED:\nIn wilcox.test(letters, c(1, 2, 4)) : \n  could not find function \"wilcox.test\"\n" # eval only in baseenv()
     testthat::expect_equal(result, expected)
     stats_env <- as.environment("package:stats")
+    on.exit(expr = if(base::exists(x = "stats_env", inherits = FALSE)){base::rm(stats_env)}, add = TRUE, after = FALSE) # guarantee the removal of stats_env even if an expectation above fails
     result <- get_message(data = str1, kind = "error", header = TRUE, print_no = FALSE, text = "IN FUN1", env = stats_env, safer_check = TRUE, lib_path = NULL, error_text = "")
     expected <-  "ERROR MESSAGE REPORTED IN FUN1:\nIn wilcox.test.default(letters, c(1, 2, 4)) : 'x' must be numeric\n" # eval only in stat(), str1 not found
     testthat::expect_equal(result, expected)
@@ -515,14 +507,8 @@ testthat::test_that("get_message()", {
 
 
     # This reaches line 540 (evaluates the expression with warning capture setup), but locally only
-    result <- get_message(data = "wilcox.test(c(1,1,3), c(1,2,4), paired = TRUE)", kind = "warning")
-    if(detect_environment == "cran"){
-        expected <- NULL
-    }else if(detect_environment == "github" && base::Sys.info()[["sysname"]] != "Linux"){
-        expected <- NULL
-    }else{
-        expected <-  "WARNING MESSAGE REPORTED:\nIn wilcox.test.default(c(1, 1, 3), c(1, 2, 4), paired = TRUE): cannot compute exact p-value with zeroes\n"
-    }
+    result <- get_message(data = "1+factor(1)", kind = "warning")
+    expected <-  "WARNING MESSAGE REPORTED:\nIn Ops.factor(1, factor(1)): '+' not meaningful for factors\n"
     testthat::expect_equal(result, expected)
     result <- get_message(data = "1 + 1", kind = "warning")  # Also reaches it, even though no warning occurs
     expected <-  NULL
